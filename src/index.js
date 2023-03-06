@@ -1,16 +1,12 @@
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
-import axios from 'axios';
 import SimpleLightbox from "simplelightbox";
 import "simplelightbox/dist/simple-lightbox.min.css";
-
+import fetchApi from './js/fetch';
 
 const formRef = document.querySelector('#search-form');
 const galleryRef = document.querySelector('.gallery');
 const btnRef = document.querySelector('.load-more');
 
-const API_KEY = '33850777-d3532e1c860cfcd3ae11015e6';
-const BASE_URL = 'https://pixabay.com/api/';
-const params = 'image_type=photo&orientation=horizontal&safesearch=true&per_page=40';
 const pageLimit = 13;
 let page = 1;
 
@@ -24,13 +20,13 @@ const lightbox = new SimpleLightbox('.gallery a', {
             });
 
 formRef.addEventListener('submit', (evt) => {
-    const value = evt.currentTarget.elements.searchQuery.value;
     evt.preventDefault();
+    btnHide();
+    const value = evt.currentTarget.elements.searchQuery.value;
     clear();
     page = 1;
     
     if (!value) {
-        btnHide();
         return
     }
 
@@ -40,7 +36,6 @@ formRef.addEventListener('submit', (evt) => {
             const elements = items.data.hits;
             
             if (totalHits === 0) {
-                btnHide();
                 Notify.failure("Sorry, there are no images matching your search query. Please try again.");
                 return
             }
@@ -48,19 +43,21 @@ formRef.addEventListener('submit', (evt) => {
             creatMarkup(elements);
             lightbox.refresh();
             Notify.success(`"Hooray! We found ${totalHits} images."`);
-            btnRef.style.display = 'block';
+            btnShow();
         })
         .catch(err => console.log(err));
 });
 
 btnRef.addEventListener('click', () => {
-        const value = formRef.elements.searchQuery.value;
-        page += 1;
+    btnHide();
+    const value = formRef.elements.searchQuery.value;
+    page += 1;
         fetchApi(value, page)
             .then(items => {
                 const elements = items.data.hits;
                 creatMarkup(elements);
                 lightbox.refresh();
+                btnShow();
 
                 if (elements[39] === undefined || page === pageLimit) {
                     btnHide();
@@ -73,13 +70,6 @@ btnRef.addEventListener('click', () => {
                 console.log(err);
             });
     });
-
-
-async function fetchApi(name, page) {
-    const items = await axios.get(`${BASE_URL}?key=${API_KEY}&q=${name}&page=${page}&${params}`);
-    return items;
-}
-
 
 function creatMarkup(arr) {
     const markup = arr.map(({ webformatURL, largeImageURL, tags, likes, views, comments, downloads }) => {
@@ -115,4 +105,7 @@ function clear() {
 
 function btnHide() {
     btnRef.style.display = 'none';
+}
+function btnShow() {
+    btnRef.style.display = 'block';
 }
